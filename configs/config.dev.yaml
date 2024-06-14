@@ -1,1 +1,3 @@
+port: 8000
 model_path: "D:\\project\\python_project\\models\\bge-large-zn-v1.5"
+

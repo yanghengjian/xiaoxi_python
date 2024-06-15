@@ -5,3 +5,4 @@ pydantic
 numpy
 python-dotenv
 pyyaml
+langchain_community

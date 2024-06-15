@@ -6,7 +6,7 @@ router = APIRouter()
 @router.post("/encode")
 async def encode_text(data: TextData):
     try:
-        encoded_vector = embedding.embed_query(data.text)
+        encoded_vector = embedding.embed_query(data.inputs)
         return {"vector": encoded_vector}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

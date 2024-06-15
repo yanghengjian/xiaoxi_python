@@ -4,7 +4,7 @@ from app.core.config import settings
 
 app = FastAPI()
 
-app.include_router(encode.router, prefix="/api/v1")
+app.include_router(encode.router)
 
 if __name__ == '__main__':
     import uvicorn

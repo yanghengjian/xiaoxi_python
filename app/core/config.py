@@ -6,14 +6,6 @@ import yaml
 # Load environment variables from .env file
 load_dotenv()
 
-class Settings(BaseModel):
-    model_path: str
-    port: int
-
-    model_config = ConfigDict(
-        protected_namespaces=()  # Disable protected namespaces warning
-    )
-
 def load_config():
     app_env = os.getenv('APP_ENV', 'dev')
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +13,6 @@ def load_config():
     print(f"Loading configuration from {config_path}")
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
-    return Settings(**config)
+    return config
 
 settings = load_config()

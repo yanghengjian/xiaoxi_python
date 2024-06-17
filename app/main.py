@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1.endpoints import encode
+from app.api.text2vec_custom import text2vec_custom as encode
 from app.core.config import settings
 
 app = FastAPI()

@@ -45,7 +45,6 @@ def meta():
 @router.post('/vectors')
 def get_vectors(text_data: TextData):
     sentences = text_data.text
-    print(sentences)
     if not sentences:
         raise HTTPException(status_code=400, detail="No sentences provided")
 

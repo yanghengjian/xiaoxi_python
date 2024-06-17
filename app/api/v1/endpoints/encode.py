@@ -45,12 +45,16 @@ def meta():
 @router.post('/vectors')
 def get_vectors(text_data: TextData):
     sentences = text_data.text
+    print(sentences)
     if not sentences:
         raise HTTPException(status_code=400, detail="No sentences provided")
 
     # 生成向量
     encoded_vector = embedding.embed_query(sentences)
     response = {
-        "vectors": encoded_vector
+        "text": sentences,
+        "vector": encoded_vector,
+        "dim": len(encoded_vector)
     }
+
     return response

@@ -2,4 +2,5 @@ port: 8000
 
 llm:
   device: "cpu"
-  embedding_path: "D:/LLM/BAAI/bge-large-zh-v1.5"
+  #embedding_path: "D:/LLM/BAAI/bge-large-zh-v1.5"
+  embedding_path: "D:/project/python_project/models/bge-large-zn-v1.5"

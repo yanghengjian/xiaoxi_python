@@ -1,9 +1,12 @@
+import asyncio
+import time
 from datetime import datetime
 
 import weaviate
 from weaviate.classes.config import Property, DataType, Configure
 from weaviate.classes.query import HybridFusion, Filter, MetadataQuery, Move, Rerank
 from weaviate.collections.classes.aggregate import Metrics, GroupByAggregate
+from weaviate.exceptions import WeaviateConnectionError
 
 from app.models.knowledge.KnowledgeVo import KnowledgeData,build_query_filters
 from app.models.utils.AjaxResult import AjaxResult
@@ -13,12 +16,36 @@ from pydantic import root_validator
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
-client = weaviate.connect_to_local("192.168.0.139","8080")
+# Weaviate 客户端懒加载
+class WeaviateClient:
+    _client = None
+
+    @classmethod
+    async def get_client(cls):
+        if cls._client is None:
+            cls._client = await cls.wait_for_weaviate()
+        return cls._client
+
+    @staticmethod
+    async def wait_for_weaviate():
+        max_retries = 10
+        retry_delay = 5  # seconds
+
+        for i in range(max_retries):
+            try:
+                client = weaviate.Client("http://192.168.0.139:8080")
+                if client.is_ready():
+                    return client
+            except Exception:
+                print(f"Attempt {i + 1} of {max_retries}: Weaviate not ready, retrying in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+        raise Exception("Weaviate did not start within the expected time.")
 
 collections_name = 'knowledge_class'
 
 @router.get("/weaviate/createCollection")
 async def create_collection2():
+    client = await WeaviateClient.get_client()
     client.collections.create(
         collections_name,
         properties=[
@@ -55,6 +82,7 @@ async def create_collection2():
 
 @router.post("/weaviate/query")
 async def query(data: KnowledgeData):
+    client = await WeaviateClient.get_client()
     query_filters = build_query_filters(data)
     page = data.page if data.page is not None else 0
     pageNum = data.pageNum if data.pageNum is not None else 10
@@ -130,6 +158,7 @@ def apply_time_decay(score, release_time_str):
 
 @router.post("/weaviate/add")
 async def add_object(data: dict):
+    client = await WeaviateClient.get_client()
     try:
         client.collections.get(collections_name).add_object(data)
         return {"message": "Object added successfully"}
@@ -138,6 +167,7 @@ async def add_object(data: dict):
 
 @router.put("/weaviate/update/{object_id}")
 async def update_object(object_id: str, data: dict):
+    client = await WeaviateClient.get_client()
     try:
         client.collections.get(collections_name).update_object(object_id, data)
         return {"message": "Object updated successfully"}
@@ -146,6 +176,7 @@ async def update_object(object_id: str, data: dict):
 
 @router.delete("/weaviate/delete/{object_id}")
 async def delete_object(object_id: str):
+    client = await WeaviateClient.get_client()
     try:
         client.collections.get(collections_name).delete_object(object_id)
         return {"message": "Object deleted successfully"}
@@ -154,6 +185,7 @@ async def delete_object(object_id: str):
 
 @router.get("/weaviate/retrieve/{object_id}")
 async def retrieve_object(object_id: str):
+    client = await WeaviateClient.get_client()
     try:
         response = client.collections.get(collections_name).get_object(object_id)
         return response

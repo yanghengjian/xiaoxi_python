@@ -26,6 +26,8 @@ class KnowledgeData(BaseModel):
     page: Optional[int] = Field(None)
     pageNum: Optional[int] = Field(None)
     currentSourch: Optional[str] = Field(None)
+    AOfferCollegeRankMin: Optional[int] = Field(None)
+    AOfferCollegeRankMax: Optional[int] = Field(None)
 
 
 def build_query_filters(data: KnowledgeData) -> List[Dict[str, Any]]:
@@ -46,7 +48,8 @@ def build_query_filters(data: KnowledgeData) -> List[Dict[str, Any]]:
     if data.AOfferDegreeLevelId is not None:
         query_filters.append(Filter.by_property("m_offer_degree_level_id").equal(data.AOfferDegreeLevelId),)
     if data.AOfferCollegeRank is not None:
-        query_filters.append(Filter.by_property("m_offer_college_rank").equal(data.AOfferCollegeRank),)
+        query_filters.append(Filter.by_property("m_offer_college_rank").greater_than(data.AOfferCollegeRankMin),)
+        query_filters.append(Filter.by_property("m_offer_college_rank").less_than(data.AOfferCollegeRankMax),)
     if data.AEducationSchoolNameZh is not None:
         query_filters.append(Filter.by_property("m_education_school_name_zh").like(data.AEducationSchoolNameZh),)
     if data.AEducationPeriodId is not None:
@@ -63,5 +66,4 @@ def build_query_filters(data: KnowledgeData) -> List[Dict[str, Any]]:
         query_filters.append(Filter.by_property("m_education_gpa").greater_than(data.AEducationGpaSta),)
     if data.AEducationGpaEnd is not None:
         query_filters.append(Filter.by_property("m_education_gpa").less_than(data.AEducationGpaEnd),)
-
     return query_filters

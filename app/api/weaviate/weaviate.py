@@ -28,15 +28,16 @@ class WeaviateClient:
 
     @staticmethod
     async def wait_for_weaviate():
-        max_retries = 10
-        retry_delay = 5  # seconds
+        max_retries = 5
+        retry_delay = 3  # seconds
 
         for i in range(max_retries):
             try:
-                client = weaviate.Client("http://192.168.0.139:8080")
+                client = weaviate.connect_to_local("192.168.0.139","8080")
                 if client.is_ready():
                     return client
-            except Exception:
+            except Exception as e:
+                print(f"Exception: {e}")
                 print(f"Attempt {i + 1} of {max_retries}: Weaviate not ready, retrying in {retry_delay} seconds...")
                 await asyncio.sleep(retry_delay)
         raise Exception("Weaviate did not start within the expected time.")

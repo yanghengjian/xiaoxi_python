@@ -177,6 +177,26 @@ async def query(name: str):
     else:
         return AjaxResult.error().to_response()
 
+@router.get("/weaviate/getKnowledgeDetailById")
+async def query(id: int):
+    client = await WeaviateClient.get_client()
+    jeopardy = client.collections.get(collections_name)
+    query_filters = []
+    query_filters.append(Filter.by_property("dataType").less_than(3), )
+    query_filters.append(Filter.by_property("data_id").equal(id), )
+    response = jeopardy.query.fetch_objects(
+        limit=1,
+        filters=(
+            Filter.all_of(query_filters)
+        ) if query_filters else None,
+        return_metadata=MetadataQuery(distance=True, score=True),
+    )
+    properties_list = [o.properties for o in response.objects]
+    if len(response.objects) > 0:
+        return AjaxResult.success(properties_list).to_response()
+    else:
+        return AjaxResult.error().to_response()
+
 def calculate_weighted_score(item):
     weights = {
         'k_class': 0.35,

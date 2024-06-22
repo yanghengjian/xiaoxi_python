@@ -3,6 +3,8 @@ import weaviate
 from datetime import datetime
 from weaviate.classes.config import Property, DataType, Configure
 from weaviate.classes.query import HybridFusion, Filter, MetadataQuery, Move, Rerank
+
+from app.common.utils.weaviate_utils import migrate_data
 from app.models.knowledge.KnowledgeVo import KnowledgeData, build_query_filters
 from app.models.utils.AjaxResult import AjaxResult
 from pydantic import root_validator
@@ -11,8 +13,9 @@ from app.core.config import settings
 
 router = APIRouter()
 
-#类名称
+# 类名称
 collections_name = 'knowledge_class'
+
 
 # Weaviate 客户端懒加载
 class WeaviateClient:
@@ -39,9 +42,6 @@ class WeaviateClient:
                 print(f"Attempt {i + 1} of {max_retries}: Weaviate not ready, retrying in {retry_delay} seconds...")
                 await asyncio.sleep(retry_delay)
         raise Exception("Weaviate did not start within the expected time.")
-
-
-
 
 
 @router.get("/weaviate/createCollection")
@@ -80,6 +80,7 @@ async def create_collection2():
         ],
     )
 
+
 @router.get("/weaviate/createknowledgeIkIndex")
 async def create_collection2():
     client = await WeaviateClient.get_client()
@@ -95,11 +96,12 @@ async def create_collection2():
             # Set a named vector
             Configure.NamedVectors.text2vec_transformers(
                 name="instruction",
-                source_properties=["content","input","output"],
+                source_properties=["content", "input", "output"],
                 vector_index_config=Configure.VectorIndex.hnsw(),
             )
         ],
     )
+
 
 @router.post("/weaviate/query")
 async def query(data: KnowledgeData):
@@ -131,6 +133,7 @@ async def query(data: KnowledgeData):
     properties_list = [o.properties for o in sorted_objects]
     return AjaxResult.success("查询成功", properties_list).put("total", total_count).to_response()
 
+
 @router.get("/weaviate/deleteKnowledgeInfoById")
 async def deleteKnowledgeInfoById(id: int):
     client = await WeaviateClient.get_client()
@@ -149,6 +152,7 @@ async def deleteKnowledgeInfoById(id: int):
             where=Filter.by_id().contains_any(ids)  # Delete the 3 objects
         )
     return AjaxResult.success().to_response()
+
 
 @router.get("/weaviate/getKnowledgeById")
 async def query(id: int):
@@ -169,6 +173,7 @@ async def query(id: int):
     else:
         return AjaxResult.error().to_response()
 
+
 @router.get("/weaviate/getKnowledgePromptBy")
 async def query(name: str):
     client = await WeaviateClient.get_client()
@@ -188,7 +193,8 @@ async def query(name: str):
     if len(response.objects) > 0:
         return AjaxResult.success(properties_list).to_response()
     else:
-        return AjaxResult.success().put("data",None).to_response()
+        return AjaxResult.success().put("data", None).to_response()
+
 
 def calculate_weighted_score(item):
     weights = {
@@ -219,4 +225,9 @@ def apply_time_decay(score, release_time_str):
         return score * 0.4
 
 
-
+@router.get("/weaviate/migrateData")
+async def weaviate_migrate_data():
+    client_src = await weaviate.connect_to_local("192.168.0.139", 8080)
+    client_tgt = await WeaviateClient.get_client()
+    migrate_data(client_src, client_tgt, collections_name, include_vector=True)
+    return AjaxResult.success().to_response()

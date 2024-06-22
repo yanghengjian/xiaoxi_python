@@ -1,23 +1,18 @@
 import asyncio
-import time
-from datetime import datetime
-
 import weaviate
-from huggingface_hub.utils import paginate
+from datetime import datetime
 from weaviate.classes.config import Property, DataType, Configure
 from weaviate.classes.query import HybridFusion, Filter, MetadataQuery, Move, Rerank
-from weaviate.collections.classes.aggregate import Metrics, GroupByAggregate
-from weaviate.exceptions import WeaviateConnectionError
-
 from app.models.knowledge.KnowledgeVo import KnowledgeData, build_query_filters
 from app.models.utils.AjaxResult import AjaxResult
-
 from pydantic import root_validator
-
 from fastapi import APIRouter, HTTPException
+from app.core.config import settings
 
 router = APIRouter()
 
+#类名称
+collections_name = 'knowledge_class'
 
 # Weaviate 客户端懒加载
 class WeaviateClient:
@@ -36,7 +31,7 @@ class WeaviateClient:
 
         for i in range(max_retries):
             try:
-                client = weaviate.connect_to_local("192.168.0.139", "8080")
+                client = weaviate.connect_to_local(settings["weaviate"]["url"], settings["weaviate"]["port"])
                 if client.is_ready():
                     return client
             except Exception as e:
@@ -46,7 +41,7 @@ class WeaviateClient:
         raise Exception("Weaviate did not start within the expected time.")
 
 
-collections_name = 'knowledge_class'
+
 
 
 @router.get("/weaviate/createCollection")
@@ -136,6 +131,24 @@ async def query(data: KnowledgeData):
     properties_list = [o.properties for o in sorted_objects]
     return AjaxResult.success("查询成功", properties_list).put("total", total_count).to_response()
 
+@router.get("/weaviate/deleteKnowledgeInfoById")
+async def deleteKnowledgeInfoById(id: int):
+    client = await WeaviateClient.get_client()
+    jeopardy = client.collections.get(collections_name)
+    query_filters = []
+    query_filters.append(Filter.by_property("dataType").less_than(3), )
+    query_filters.append(Filter.by_property("data_id").equal(id), )
+    response = jeopardy.query.fetch_objects(
+        filters=(
+            Filter.all_of(query_filters)
+        )
+    )
+    ids = [o.uuid for o in response.objects]  # These can be lists of strings, or `UUID` objects
+    if len(ids) > 0:
+        jeopardy.data.delete_many(
+            where=Filter.by_id().contains_any(ids)  # Delete the 3 objects
+        )
+    return AjaxResult.success().to_response()
 
 @router.get("/weaviate/getKnowledgeById")
 async def query(id: int):
@@ -145,14 +158,14 @@ async def query(id: int):
     query_filters.append(Filter.by_property("dataType").less_than(3), )
     query_filters.append(Filter.by_property("data_id").equal(id), )
     response = jeopardy.query.fetch_objects(
-        limit=1,
         filters=(
             Filter.all_of(query_filters)
         ) if query_filters else None,
         return_properties=["data_id"]
     )
+    uuid_list = [o.uuid for o in response.objects]
     if len(response.objects) > 0:
-        return AjaxResult.success(response.objects[0].uuid).to_response()
+        return AjaxResult.success(uuid_list).to_response()
     else:
         return AjaxResult.error().to_response()
 
@@ -169,33 +182,13 @@ async def query(name: str):
         filters=(
             Filter.all_of(query_filters)
         ) if query_filters else None,
-        return_metadata=MetadataQuery(distance=True, score=True),
+        return_properties=["title"],
     )
-    properties_list = [o.properties for o in response.objects]
+    properties_list = [o.properties.get("title") for o in response.objects]
     if len(response.objects) > 0:
         return AjaxResult.success(properties_list).to_response()
     else:
-        return AjaxResult.error().to_response()
-
-@router.get("/weaviate/getKnowledgeDetailById")
-async def query(id: int):
-    client = await WeaviateClient.get_client()
-    jeopardy = client.collections.get(collections_name)
-    query_filters = []
-    query_filters.append(Filter.by_property("dataType").less_than(3), )
-    query_filters.append(Filter.by_property("data_id").equal(id), )
-    response = jeopardy.query.fetch_objects(
-        limit=1,
-        filters=(
-            Filter.all_of(query_filters)
-        ) if query_filters else None,
-        return_metadata=MetadataQuery(distance=True, score=True),
-    )
-    properties_list = [o.properties for o in response.objects]
-    if len(response.objects) > 0:
-        return AjaxResult.success(properties_list).to_response()
-    else:
-        return AjaxResult.error().to_response()
+        return AjaxResult.success().put("data",None).to_response()
 
 def calculate_weighted_score(item):
     weights = {
@@ -226,41 +219,4 @@ def apply_time_decay(score, release_time_str):
         return score * 0.4
 
 
-@router.post("/weaviate/add")
-async def add_object(data: dict):
-    client = await WeaviateClient.get_client()
-    try:
-        client.collections.get(collections_name).add_object(data)
-        return {"message": "Object added successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
-
-@router.put("/weaviate/update/{object_id}")
-async def update_object(object_id: str, data: dict):
-    client = await WeaviateClient.get_client()
-    try:
-        client.collections.get(collections_name).update_object(object_id, data)
-        return {"message": "Object updated successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.delete("/weaviate/delete/{object_id}")
-async def delete_object(object_id: str):
-    client = await WeaviateClient.get_client()
-    try:
-        client.collections.get(collections_name).delete_object(object_id)
-        return {"message": "Object deleted successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get("/weaviate/retrieve/{object_id}")
-async def retrieve_object(object_id: str):
-    client = await WeaviateClient.get_client()
-    try:
-        response = client.collections.get(collections_name).get_object(object_id)
-        return response
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))

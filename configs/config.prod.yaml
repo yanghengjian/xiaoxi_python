@@ -1,5 +1,9 @@
 port: 8000
 
 llm:
-  device: "cuda:0"
-  embedding_path: "/home/wishfyc/LLM/BAAI/bge-large-zh-v1.5"
+  device: "cpu"
+  embedding_path: "/data/python/models/bge-large-zh-v1.5"
+
+weaviate:
+  url: "192.168.0.34"
+  port: "1700"

@@ -3,3 +3,7 @@ port: 8000
 llm:
   device: "cpu"
   embedding_path: "/home/wishfyc/LLM/BAAI/bge-large-zh-v1.5"
+
+weaviate:
+  url: "192.168.0.139"
+  port: "8080"

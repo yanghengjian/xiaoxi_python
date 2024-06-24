@@ -1,6 +1,9 @@
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from typing import List
 from app.core.config import settings
+from vllm.engine.arg_utils import AsyncEngineArgs
+from vllm.engine.async_llm_engine import AsyncLLMEngine
+from vllm.usage.usage_lib import UsageContext
 
 
 class embedding:
@@ -21,3 +24,10 @@ class embedding:
     @classmethod
     def embed_documents(cls, texts: List[str]) -> List[List[float]]:
         return cls.embedding.embed_documents(texts)
+
+
+class VllmClient:
+    llm = settings["vllm"]
+    engine_args = AsyncEngineArgs(llm)
+    engine = AsyncLLMEngine.from_engine_args(
+        engine_args, usage_context=UsageContext.API_SERVER)

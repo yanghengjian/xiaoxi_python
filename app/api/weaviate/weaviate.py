@@ -22,26 +22,10 @@ class WeaviateClient:
     _client = None
 
     @classmethod
-    async def get_client(cls):
-        if cls._client is None:
-            cls._client = await cls.wait_for_weaviate()
-        return cls._client
-
-    @staticmethod
-    async def wait_for_weaviate():
-        max_retries = 5
-        retry_delay = 3  # seconds
-
-        for i in range(max_retries):
-            try:
-                client = weaviate.connect_to_local(settings["weaviate"]["url"], settings["weaviate"]["port"])
-                if client.is_ready():
-                    return client
-            except Exception as e:
-                print(f"Exception: {e}")
-                print(f"Attempt {i + 1} of {max_retries}: Weaviate not ready, retrying in {retry_delay} seconds...")
-                await asyncio.sleep(retry_delay)
-        raise Exception("Weaviate did not start within the expected time.")
+    async def get_client(self):
+        if self._client is None:
+            self._client = weaviate.connect_to_local(settings["weaviate"]["url"], settings["weaviate"]["port"])
+        return self._client
 
 
 @router.get("/weaviate/createCollection")

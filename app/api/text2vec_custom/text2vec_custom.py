@@ -47,7 +47,3 @@ def get_vectors(text_data: TextData):
     }
 
     return response
-
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(router, host='0.0.0.0', port=8001)

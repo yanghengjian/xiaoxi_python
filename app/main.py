@@ -5,7 +5,7 @@ from app.core.config import settings
 
 app = FastAPI()
 
-app.include_router(encode.router)
+# app.include_router(encode.router)
 app.include_router(weaviate.router)
 
 if __name__ == '__main__':

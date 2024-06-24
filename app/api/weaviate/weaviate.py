@@ -15,7 +15,7 @@ router = APIRouter()
 
 # 类名称
 collections_name = 'knowledge_class'
-
+client = weaviate.connect_to_local(settings["weaviate"]["url"], settings["weaviate"]["port"])
 
 # Weaviate 客户端懒加载
 class WeaviateClient:
@@ -30,7 +30,6 @@ class WeaviateClient:
 
 @router.get("/weaviate/createCollection")
 async def create_collection2():
-    client = await WeaviateClient.get_client()
     client.collections.create(
         collections_name,
         properties=[
@@ -67,7 +66,6 @@ async def create_collection2():
 
 @router.get("/weaviate/createknowledgeIkIndex")
 async def create_collection2():
-    client = await WeaviateClient.get_client()
     client.collections.create(
         "knowledge_ik_index",
         properties=[
@@ -89,7 +87,6 @@ async def create_collection2():
 
 @router.post("/weaviate/query")
 async def query(data: KnowledgeData):
-    client = await WeaviateClient.get_client()
     query_filters = build_query_filters(data)
     page = data.page if data.page is not None else 0
     pageNum = data.pageNum if data.pageNum is not None else 10
@@ -120,7 +117,6 @@ async def query(data: KnowledgeData):
 
 @router.get("/weaviate/deleteKnowledgeInfoById")
 async def deleteKnowledgeInfoById(id: int):
-    client = await WeaviateClient.get_client()
     jeopardy = client.collections.get(collections_name)
     query_filters = []
     query_filters.append(Filter.by_property("dataType").less_than(3), )
@@ -140,7 +136,6 @@ async def deleteKnowledgeInfoById(id: int):
 
 @router.get("/weaviate/getKnowledgeById")
 async def query(id: int):
-    client = await WeaviateClient.get_client()
     jeopardy = client.collections.get(collections_name)
     query_filters = []
     query_filters.append(Filter.by_property("dataType").less_than(3), )
@@ -160,7 +155,6 @@ async def query(id: int):
 
 @router.get("/weaviate/getKnowledgePromptBy")
 async def query(name: str):
-    client = await WeaviateClient.get_client()
     jeopardy = client.collections.get(collections_name)
     query_filters = []
     query_filters.append(Filter.by_property("dataType").equal(1), )
@@ -211,7 +205,7 @@ def apply_time_decay(score, release_time_str):
 
 @router.get("/weaviate/migrateData")
 async def weaviate_migrate_data():
-    client_src = await weaviate.connect_to_local("192.168.0.139", 8080)
-    client_tgt = await WeaviateClient.get_client()
+    client_src = weaviate.connect_to_local("192.168.0.139", 8080)
+    client_tgt = weaviate.connect_to_local(settings["weaviate"]["url"], settings["weaviate"]["port"])
     migrate_data(client_src, client_tgt, collections_name, include_vector=True)
     return AjaxResult.success().to_response()

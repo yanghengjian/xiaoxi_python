@@ -3,6 +3,7 @@ import weaviate
 from datetime import datetime
 from weaviate.classes.config import Property, DataType, Configure
 from weaviate.classes.query import HybridFusion, Filter, MetadataQuery, Move, Rerank
+from weaviate.collections.classes.aggregate import Metrics
 
 from app.common.utils.weaviate_utils import migrate_data
 from app.models.knowledge.KnowledgeVo import KnowledgeData, build_query_filters
@@ -172,6 +173,27 @@ async def query(name: str):
         return AjaxResult.success(properties_list).to_response()
     else:
         return AjaxResult.success().put("data", None).to_response()
+
+@router.get("/weaviate/getClassMaxTotal")
+async def getClassMaxTotal(type: int):
+    filter = None;
+    if type == 1 or type == 2:
+        filter = Filter.by_property("dataType").less_than(3)
+    elif type == 3:
+        filter = Filter.by_property("dataType").equal(3)
+    else:
+        AjaxResult.error("id限制")
+    jeopardy = client.collections.get(collections_name)
+    response = jeopardy.aggregate.over_all(
+        filters=filter,
+        total_count=True,
+        return_metrics=Metrics("data_id").integer(maximum=True),
+    )
+    return AjaxResult.success(response.total_count).put("data_id",response.properties["data_id"].maximum)
+
+
+
+
 
 
 def calculate_weighted_score(item):

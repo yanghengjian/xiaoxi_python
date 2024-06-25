@@ -35,7 +35,7 @@ def build_query_filters(data: KnowledgeData) -> List[Dict[str, Any]]:
 
     if data.dataType is not None:
         query_filters.append(Filter.by_property("dataType").equal(data.dataType),)
-    if data.KClass is not None:
+    if data.KClass is not None and data.KClass != "":
         query_filters.append(Filter.by_property("k_class").contains_any([data.KClass]),)
     if data.KCountryId is not None:
         query_filters.append(Filter.by_property("k_countryIds").contains_any([data.KCountryId]),)
@@ -47,14 +47,14 @@ def build_query_filters(data: KnowledgeData) -> List[Dict[str, Any]]:
         query_filters.append(Filter.by_property("m_offer_college_id").equal(data.AOfferCollegeId),)
     if data.AOfferDegreeLevelId is not None:
         query_filters.append(Filter.by_property("m_offer_degree_level_id").equal(data.AOfferDegreeLevelId),)
-    if data.AOfferCollegeRank is not None:
+    if data.AOfferCollegeRank is not None and data.AOfferCollegeRank > 0:
         query_filters.append(Filter.by_property("m_offer_college_rank").greater_than(data.AOfferCollegeRankMin),)
         query_filters.append(Filter.by_property("m_offer_college_rank").less_than(data.AOfferCollegeRankMax),)
-    if data.AEducationSchoolNameZh is not None:
+    if data.AEducationSchoolNameZh is not None and data.AEducationSchoolNameZh != "":
         query_filters.append(Filter.by_property("m_education_school_name_zh").like(data.AEducationSchoolNameZh),)
     if data.AEducationPeriodId is not None:
         query_filters.append(Filter.by_property("m_education_period_id").equal(data.AEducationPeriodId),)
-    if data.AEducationSchoolTypeName is not None:
+    if data.AEducationSchoolTypeName is not None and data.AEducationSchoolTypeName != "":
         query_filters.append(Filter.by_property("m_education_school_type_name").like(data.AEducationSchoolTypeName),)
     if data.AOfferTypeId is not None:
         query_filters.append(Filter.by_property("m_offer_type").equal(data.AOfferTypeId),)

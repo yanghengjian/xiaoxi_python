@@ -3,7 +3,7 @@ import weaviate
 from datetime import datetime
 from weaviate.classes.config import Property, DataType, Configure
 from weaviate.classes.query import HybridFusion, Filter, MetadataQuery, Move, Rerank
-from weaviate.collections.classes.aggregate import Metrics
+from weaviate.collections.classes.aggregate import Metrics, GroupByAggregate
 
 from app.common.utils.weaviate_utils import migrate_data
 from app.models.knowledge.KnowledgeVo import KnowledgeData, build_query_filters
@@ -192,7 +192,20 @@ async def getClassMaxTotal(type: int):
     return AjaxResult.success(response.total_count).put("data_id",response.properties["data_id"].maximum)
 
 
-
+@router.get("/weaviate/deleteduplicateData")
+async def deleteduplicateData(type: int):
+    filter = None;
+    if type == 1 or type == 2:
+        filter = Filter.by_property("dataType").less_than(3)
+    elif type == 3:
+        filter = Filter.by_property("dataType").equal(3)
+    else:
+        AjaxResult.error("id限制")
+    jeopardy = client.collections.get(collections_name)
+    response = jeopardy.data.delete_many(
+        where=filter  # Delete the 3 objects
+    )
+    return AjaxResult.success(response)
 
 
 

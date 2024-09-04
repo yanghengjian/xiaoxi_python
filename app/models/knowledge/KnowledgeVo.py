@@ -28,6 +28,12 @@ class KnowledgeData(BaseModel):
     currentSourch: Optional[str] = Field(None)
     AOfferCollegeRankMin: Optional[int] = Field(None)
     AOfferCollegeRankMax: Optional[int] = Field(None)
+    SVisibility: Optional[int] = Field(None)
+    SStudentVisibility: Optional[int] = Field(None)
+    SCountryId: Optional[int] = Field(None)
+    SSchoolIds: Optional[int] = Field(None)
+    SCategory: Optional[int] = Field(None)
+    SCreateBy: Optional[int] = Field(None)
 
 
 def build_query_filters(data: KnowledgeData) -> List[Dict[str, Any]]:
@@ -66,4 +72,15 @@ def build_query_filters(data: KnowledgeData) -> List[Dict[str, Any]]:
         query_filters.append(Filter.by_property("m_education_gpa").greater_than(data.AEducationGpaSta),)
     if data.AEducationGpaEnd is not None:
         query_filters.append(Filter.by_property("m_education_gpa").less_than(data.AEducationGpaEnd),)
+
+    if data.SVisibility is not None:
+        query_filters.append(Filter.by_property("s_visibility").equal(data.SVisibility),)
+    if data.SStudentVisibility is not None:
+        query_filters.append(Filter.by_property("s_studentVisibility").equal(data.SStudentVisibility),)
+    if data.SCategory is not None:
+        query_filters.append(Filter.by_property("s_category").equal(data.SCategory),)
+    if data.SCountryId is not None:
+        query_filters.append(Filter.by_property("s_countryId").equal(data.SCountryId),)
+    if data.SSchoolIds is not None:
+        query_filters.append(Filter.by_property("s_schoolIds").contains_any([data.SSchoolIds]),)
     return query_filters

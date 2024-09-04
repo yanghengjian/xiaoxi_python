@@ -49,7 +49,12 @@ async def create_collection2():
             Property(name="m_offer_college_rank", data_type=DataType.INT),
             Property(name="m_offer_country_id", data_type=DataType.INT),
             Property(name="m_offer_degree_level_id", data_type=DataType.INT),
-            Property(name="m_offer_type", data_type=DataType.INT),
+            Property(name="s_category", data_type=DataType.INT),
+            Property(name="s_visibility", data_type=DataType.INT),
+            Property(name="s_studentVisibility", data_type=DataType.INT),
+            Property(name="s_countryId", data_type=DataType.INT),
+            Property(name="s_schoolIds",data_type=DataType.NUMBER_ARRAY),
+            Property(name="s_createBy", data_type=DataType.TEXT),
             Property(name="realtime", data_type=DataType.DATE),
             Property(name="title", data_type=DataType.TEXT),
 
@@ -63,6 +68,17 @@ async def create_collection2():
             )
         ],
     )
+
+@router.get("/weaviate/updateKnowledgeSchema")
+async def create_collection2():
+    articles = client.collections.get(collections_name)
+    articles.config.add_property(Property(name="s_category", data_type=DataType.INT))
+    articles.config.add_property(Property(name="s_visibility", data_type=DataType.INT))
+    articles.config.add_property(Property(name="s_studentVisibility", data_type=DataType.INT))
+    articles.config.add_property(Property(name="s_countryId", data_type=DataType.INT))
+    articles.config.add_property(Property(name="s_schoolIds",data_type=DataType.NUMBER_ARRAY))
+    articles.config.add_property(Property(name="s_createBy", data_type=DataType.TEXT))
+
 
 
 @router.get("/weaviate/createknowledgeIkIndex")
@@ -134,6 +150,26 @@ async def deleteKnowledgeInfoById(id: int):
         )
     return AjaxResult.success().to_response()
 
+
+@router.get("/weaviate/deleteDataByTypeAndId")
+async def deleteDataByTypeAndId(id: int, dataType: int):
+    if id is None or dataType is None:
+        return AjaxResult.error("参数错误").to_response()
+    jeopardy = client.collections.get(collections_name)
+    query_filters = []
+    query_filters.append(Filter.by_property("dataType").equal(dataType), )
+    query_filters.append(Filter.by_property("data_id").equal(id), )
+    response = jeopardy.query.fetch_objects(
+        filters=(
+            Filter.all_of(query_filters)
+        )
+    )
+    ids = [o.uuid for o in response.objects]  # These can be lists of strings, or `UUID` objects
+    if len(ids) > 0:
+        jeopardy.data.delete_many(
+            where=Filter.by_id().contains_any(ids)  # Delete the 3 objects
+        )
+    return AjaxResult.success().to_response()
 
 @router.get("/weaviate/getKnowledgeById")
 async def query(id: int):
@@ -244,3 +280,5 @@ async def weaviate_migrate_data():
     client_tgt = weaviate.connect_to_local(settings["weaviate"]["url"], settings["weaviate"]["port"])
     migrate_data(client_src, client_tgt, collections_name, include_vector=True)
     return AjaxResult.success().to_response()
+
+
